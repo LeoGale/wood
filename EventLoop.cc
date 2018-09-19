@@ -36,5 +36,5 @@ void EventLoop::stop()
 {
     quit_ = true;
 }
-eha
+
 }
