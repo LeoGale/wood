@@ -1,5 +1,5 @@
 # wood
-## intent
+## Intent
 This project is used to implement gRPC over TCP.
 ## Event-driven architecture
 ### Reactor pattern
@@ -18,5 +18,5 @@ This project is used to implement gRPC over TCP.
 * provide tools to analysis log
 * log format
 ## Performance
-## dimension
+## Dimension
 ## Conclusion 
