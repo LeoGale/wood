@@ -15,7 +15,7 @@ This project is used to implement gRPC over TCP.
 * collect infos
 * publish infos to web
 ## Logging system
-* provide tools to analysis log
+* provide tools to analyze log
 * log format
 ## Performance
 ## Dimension
