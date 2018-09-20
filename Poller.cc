@@ -1,7 +1,9 @@
 #include <poll.h>
-
+#include <iostream>
 #include "Poller.hh"
 #include "EventLoop.hh"
+#include "EventHandler.hh"
+#include "assert.h"
 
 namespace Wood {
 Poller::Poller(EventLoop *loop)
@@ -15,7 +17,7 @@ Poller::~Poller() {
 
 void Poller::poll(int timeout, std::vector<EventHandler*> *handlers)
 {
-    int numEvents = ::poll(pollfds_.begin(), pollfds_.size(), timeout);
+    int numEvents = ::poll(&*pollfds_.begin(), pollfds_.size(), timeout);
     int savedError = errno;
     if(numEvents > 0) 
     {
@@ -39,12 +41,12 @@ void Poller::update(EventHandler *handler)
     auto aHandler = handlers_.find(handler->fd());
     if (aHandler == std::end(handlers_))
     {
-        handlers_.insert(std::make_pair<int, EventHandler>(handler->fd(), handler));
-        std::cout << "Poller::update add eventHandler " << handler->to_string() << std::endl;
+        handlers_.insert(std::pair<int, EventHandler*>(handler->fd(), handler));
+        std::cout << "Poller::update add eventHandler " << handler->eventsStr() << std::endl;
     }
     else 
     {
-        aHandler->setEvents(handler->events());
+        aHandler->second->setEvents(handler->events());
     }
 }
 
@@ -54,7 +56,7 @@ void Poller::remove(EventHandler *handler)
 
     if (aHandler != std::end(handlers_)) 
     {
-        handlers_.erase(aHandler->fd());
+        handlers_.erase(handler->fd());
     }
 }
 
@@ -67,13 +69,14 @@ void Poller::fillActiveEvHandler(int numEvents, std::vector<EventHandler *> *han
             break;
         }
         
-        if (pfd.reevents > 0)
+        if (pfd.revents > 0)
         {
             numEvents--;
             auto handler = handlers_.find(pfd.fd);
             assert(handler == std::end(handlers_));
-            handler->setReevents(pfd.reevents);
-            handlers.push_back(handler->second)
+            EventHandler * evHandler = handler->second;
+            evHandler->setRevents(pfd.revents);
+            handlers->push_back(evHandler);
         }
     }
 }

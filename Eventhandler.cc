@@ -1,27 +1,37 @@
 #include "EventHandler.hh"
+#include <iostream>
+#include <sstream>
 
 namespace Wood {
-constexpr int EventHandler::NoneEvent = 0;
-constexpr int EventHandler::ReadEvent = POLLIN | POLLPRI;
-constexpr int EventHandler::WriteEvent = POLLOUT;
+const int EventHandler::NoneEvent = 0;
+const int EventHandler::ReadEvent = POLLIN | POLLPRI;
+const int EventHandler::WriteEvent = POLLOUT;
 
 EventHandler::EventHandler(int fd)
-:fd_(),
-events(NoneEvent),
-reevents(0),
+:fd_(-1),
+events_(NoneEvent),
+revents_(0),
 index_(-1)
 {
 
 }
 
-EventHandler::~EventHandler
+EventHandler::~EventHandler()
 {
     
 }
 
 void EventHandler::handleEvent()
 {
+    if (revents_ & POLLOUT)
+    {
+        std::cout <<"EventHandler::handleEvent write event-emitting." << std::endl;
+    }
 
+    if(revents_ & (POLLIN | POLLPRI))
+    {
+        std::cout <<"EventHandler::handleEvent read event-emitting." << std::endl;
+    }
 }
 
 std::string EventHandler::eventsStr() const
@@ -29,12 +39,12 @@ std::string EventHandler::eventsStr() const
     return eventsToString(fd(), events());
 }
 
-std::string EventHandler::reeventsStr() const
+std::string EventHandler::reventsStr() const
 {
-    return eventsToString(fd(), reevents());
+    return eventsToString(fd(), revents());
 }
 
-std::string eventsToString(int fd, int ev) const {
+std::string EventHandler::eventsToString(int fd, int ev) const {
     std::ostringstream oss;
     oss << fd << ":";
     if (ev & POLLIN)

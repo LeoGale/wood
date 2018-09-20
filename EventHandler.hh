@@ -1,5 +1,5 @@
 #include <poll.h>
-#include <string.h>
+#include <string>
 
 namespace Wood {
 class EventHandler {
@@ -7,7 +7,7 @@ public:
     EventHandler(int fd);
     ~EventHandler();
 
-    int fd()
+    int fd() const
     {
         return fd_;
     }
@@ -46,22 +46,28 @@ public:
         return events_;
     }
 
-    std::string eventsStr() const;
-    std::string reeventsStr() const;
-
-    void setReevents(short reevents)
+    short revents() const 
     {
-        reevents_ = reevents;
+        return revents_;
+    }
+    
+    std::string eventsStr() const;
+    std::string reventsStr() const;
+
+    void setRevents(short revents)
+    {
+        revents_ = revents;
     }
 
-    static constexpr int NoneEvent;
-    static constexpr int ReadEvent;
-    static constexpr int WriteEvent;
+    static const int NoneEvent;
+    static const int ReadEvent;
+    static const int WriteEvent;
 
   private:
+    std::string eventsToString(int fd, int ev) const;
     int fd_;
     int events_;
-    int reevents_;
+    int revents_;
     int index_;
 };
 }

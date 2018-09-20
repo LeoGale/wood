@@ -5,6 +5,7 @@ struct pollfd;
 
 namespace Wood {
 class EventLoop;
+class EventHandler;
 
 class Poller {
 public:

@@ -5,6 +5,7 @@
 namespace Wood
 {
 class Poller; 
+class EventHandler;
 
 class EventLoop
 {

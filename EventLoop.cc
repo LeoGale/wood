@@ -1,12 +1,16 @@
 #include "EventLoop.hh"
 #include "Poller.hh"
+#include "EventHandler.hh"
+
+constexpr int PollTimeout = 1000;
 
 namespace Wood {
 
 EventLoop::EventLoop()
 :quit_(false),
 isLooping(false),
-eventHanlding(false)
+eventHanlding(false),
+poller_(new Poller(this))
 {
 }
 
@@ -20,14 +24,14 @@ void EventLoop::loop()
     {
         isLooping = true;
         activeHandlers_.clear();
-        poller_->poll(PollTimeout, activeHandlers_);
+        poller_->poll(PollTimeout, &activeHandlers_);
 
-        eventHanlding = true;
+        //eventHanlding = true;
         for (auto &activeHanlder : activeHandlers_)
         {
             activeHanlder->handleEvent();
         }
-        eventHanlding = false;
+        //eventHanlding = false;
     }
     isLooping = false;
 }
@@ -37,4 +41,9 @@ void EventLoop::stop()
     quit_ = true;
 }
 
+}
+
+int main() {
+    Wood::EventLoop aLoop;
+    aLoop.loop();
 }
