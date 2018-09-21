@@ -1,17 +1,21 @@
 #include "EventHandler.hh"
+#include "EventLoop.hh"
+
 #include <iostream>
 #include <sstream>
+#include <unistd.h>
 
 namespace Wood {
 const int EventHandler::NoneEvent = 0;
 const int EventHandler::ReadEvent = POLLIN | POLLPRI;
 const int EventHandler::WriteEvent = POLLOUT;
 
-EventHandler::EventHandler(int fd)
-:fd_(-1),
+EventHandler::EventHandler(int fd, EventLoop* loop)
+:fd_(fd),
 events_(NoneEvent),
 revents_(0),
-index_(-1)
+index_(-1),
+loop_(loop)
 {
 
 }
@@ -23,14 +27,16 @@ EventHandler::~EventHandler()
 
 void EventHandler::handleEvent()
 {
-    if (revents_ & POLLOUT)
-    {
-        std::cout <<"EventHandler::handleEvent write event-emitting." << std::endl;
-    }
-
     if(revents_ & (POLLIN | POLLPRI))
     {
         std::cout <<"EventHandler::handleEvent read event-emitting." << std::endl;
+        readCallback_();
+    }
+
+    if (revents_ & POLLOUT)
+    {
+        std::cout <<"EventHandler::handleEvent write event-emitting." << std::endl;
+        writeCallback_();
     }
 }
 
@@ -42,6 +48,16 @@ std::string EventHandler::eventsStr() const
 std::string EventHandler::reventsStr() const
 {
     return eventsToString(fd(), revents());
+}
+
+void EventHandler::update() 
+{
+    loop_->updateEventHandler(this);
+}
+
+void EventHandler::remove() 
+{
+    loop_->removeEventHandler(this);
 }
 
 std::string EventHandler::eventsToString(int fd, int ev) const {
