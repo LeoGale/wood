@@ -8,7 +8,7 @@ namespace Wood
 
 using Task = std::function<void()>;
 
-class Poller; 
+class EventDemultiplexer; 
 class EventHandler;
 
 class EventLoop
@@ -22,17 +22,22 @@ class EventLoop
     void updateEventHandler(EventHandler* eventHandler);
     void removeEventHandler(EventHandler* eventHandler);
     void runInLoop(Task task);
+    void assertInLoopThread();
+
   private:
-    void weak();
+    void wake();
     void queueInLoop(Task task);
     void handleRead();
     void runPendingTasks();
+    bool isInLoopThread() const;
+    void abortNotInLoopThread();
     bool quit_;
-    bool isLooping;
-    bool eventHanlding;
+    bool isLooping_;
+    bool eventHanlding_;
     int wakefd_;
-    std::unique_ptr<EventHandler> eventHandler_;
-    std::unique_ptr<Poller> poller_;
+    const pid_t threadId_;
+    std::unique_ptr<EventHandler> wakeHandler_;
+    std::unique_ptr<EventDemultiplexer> eventDemultiplexer_;
     std::vector<Task> tasks;
     std::vector<EventHandler*> activeHandlers_;
 

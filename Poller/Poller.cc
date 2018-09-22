@@ -1,21 +1,19 @@
 #include <poll.h>
 #include <iostream>
+#include <assert.h>
+
 #include "Poller.hh"
-#include "EventLoop.hh"
-#include "EventHandler.hh"
-#include "assert.h"
+//FIXME remove .. after involve cmake in project
+#include "../EventHandler.hh"
 
 namespace Wood {
 Poller::Poller(EventLoop *loop)
-    : loop_(loop)
+: EventDemultiplexer(loop)
 {
-}
-
-Poller::~Poller() {
 
 }
 
-void Poller::poll(int timeout, std::vector<EventHandler*> *handlers)
+void Poller::poll(int timeout, EventHandlers *handlers)
 {
     int numEvents = ::poll(&*pollfds_.begin(), pollfds_.size(), timeout);
     int savedError = errno;
@@ -24,10 +22,12 @@ void Poller::poll(int timeout, std::vector<EventHandler*> *handlers)
         std::cout << "Poller::poll there are " << numEvents << " happens." << std::endl;
         fillActiveEvHandler(numEvents, handlers);
     }
-    else if ( numEvents == 0) {
+    else if ( numEvents == 0) 
+    {
         std::cout <<"Poller::poll nothing happens" << std::endl;
     }
-    else {
+    else 
+    {
         if (savedError != EINTR)
         {
             errno = savedError;
@@ -60,7 +60,7 @@ void Poller::remove(EventHandler *handler)
     }
 }
 
-void Poller::fillActiveEvHandler(int numEvents, std::vector<EventHandler *> *handlers)
+void Poller::fillActiveEvHandler(int numEvents, EventHandlers *handlers)
 {
     for (auto &pfd : pollfds_)
     {

@@ -27,15 +27,16 @@ EventHandler::~EventHandler()
 
 void EventHandler::handleEvent()
 {
+    std::cout <<"EventHandler::handleEvent TRACE" << std::endl;
     if(revents_ & (POLLIN | POLLPRI))
     {
-        std::cout <<"EventHandler::handleEvent read event-emitting." << std::endl;
+        std::cout <<"EventHandler::handleEvent DEBUG read event emitted." << std::endl;
         readCallback_();
     }
 
     if (revents_ & POLLOUT)
     {
-        std::cout <<"EventHandler::handleEvent write event-emitting." << std::endl;
+        std::cout <<"EventHandler::handleEvent DEBUG write event emitted." << std::endl;
         writeCallback_();
     }
 }
