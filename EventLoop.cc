@@ -1,206 +1,188 @@
 #include <sys/eventfd.h>
-#include <iostream>
 #include <unistd.h>
+#include <assert.h>
+
+#include <iostream>
 #include <thread>
 
 #include "EventLoop.hh"
 #include "EventDemultiplexer.hh"
-#include "EventHandler.hh"
 #include "CurrentThread.hh"
+#include "EventHandler.hh"
 
 namespace Wood {
 
 namespace {
-    constexpr int PollTimeout = 1000;
 
-    __thread EventLoop* t_EventLoopInThread_ = nullptr;
+	__thread const EventLoop* t_eventLoopInThread = nullptr;
 
-    int createEventfd() {
-        int evFd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
-        int errrnoSaved = errno;
+	constexpr int PollTimeout = 10000;
 
-        if (evFd < 0) {
-            std::cerr << "FETAL ERROR createEventfd failed, error code : " << errrnoSaved << std::endl;//perror(errrnoSaved) << std::endl;
-            abort();
-        }
-    }
+	int createEventFd()
+	{
+		int fd = ::eventfd(0, EFD_CLOEXEC  | EFD_NONBLOCK );
+		if(fd < 0)
+		{
+			std::cout << "createEventfd failed exit" << std::endl;
+			abort();
+		}
+	}
 }
 
+const EventLoop* EventLoop::getCurerntEventLoop()
+{
+	return t_eventLoopInThread;
+}
 
 EventLoop::EventLoop()
-:quit_(false),
-isLooping_(false),
-eventHanlding_(false),
-wakefd_(createEventfd()),
+:quit_(true),
+wakefd_(createEventFd()),
 threadId_(CurrentThread::tid()),
-wakeHandler_(new EventHandler(wakefd_, this)),
-eventDemultiplexer_(EventDemultiplexer::createDefaultPoller(this))
+eventDemultiplexer_(EventDemultiplexer::createDefaultPoller(this)),
+wakeupHandler_(new EventHandler(wakefd_, this))
 {
-    if(t_EventLoopInThread_)//FIXME using UNLIKELY
-    {
-        std::cerr <<"EventLoop::EventLoop FATAL there is a exist event loop in current thread." << std::endl;
-    }
-    else 
-    {
-        t_EventLoopInThread_ = this;
-    }
-
-    wakeHandler_->setReadCallback(std::bind(&EventLoop::handleRead, this));
-    wakeHandler_->enableReading();
+	wakeupHandler_->setReadCallback(std::bind(&EventLoop::handleRead, this));
+	wakeupHandler_->enableReading();
+	t_eventLoopInThread = this;
 }
 
-EventLoop::~EventLoop()
+EventLoop::~EventLoop() 
 {
-    wakeHandler_->disableAll();
-    wakeHandler_->remove();
-    ::close(wakefd_);
-    t_EventLoopInThread_ = nullptr;
-}
-
-void EventLoop::loop() 
-{
-    while(!quit_) 
-    {
-        isLooping_ = true;
-        activeHandlers_.clear();
-        eventDemultiplexer_->poll(PollTimeout, &activeHandlers_);
-
-        std::cout <<"EventLoop::loop time " << time(nullptr) << std::endl;
-        eventHanlding_ = true;
-        for (auto &activeHanlder : activeHandlers_)
-        {
-            activeHanlder->handleEvent();
-        }
-
-        runPendingTasks();
-
-        eventHanlding_ = false;
-    }
-    isLooping_ = false;
+	wakeupHandler_->disableAll();
+	wakeupHandler_->remove();
+	::close(wakefd_);
+	t_eventLoopInThread = nullptr;
 }
 
 void EventLoop::stop()
 {
-    quit_ = true;
+	quit_ = true;
 }
 
-void EventLoop::wake()
+void EventLoop::loop() 
 {
-    int64_t data = 1;
-    int nwrite = ::write(wakefd_, &data, sizeof data);
-    if(nwrite < sizeof data)
-    {
-        std::cerr <<"EventLoop::wake write nwrite instead of " << sizeof data << std::endl;
-    }
+	assertInLoopThread();
+	quit_ = false;
+	while(!quit_)
+	{
+		EventHandlerList activeHandlers;
+
+		eventDemultiplexer_->poll(PollTimeout, &activeHandlers);
+
+		for(auto & handler : activeHandlers)
+		{
+			handler->handleEvents();
+		}
+
+		doPendingTasks();
+	}
 }
 
-void EventLoop::runInLoop(Task task) {
-    if(isInLoopThread())
-    {
-        task();
-    }
-    else {
-        queueInLoop(std::move(task));
-    }
+
+void EventLoop::doPendingTasks()
+{
+	std::vector<Task> tasks;
+	{
+		std::lock_guard<std::mutex> guard(mutex_);
+		tasks = std::move(tasks_);
+	}
+
+	for(auto& task : tasks)
+	{
+		task();
+	}
+}
+
+void EventLoop::wake() 
+{
+	std::cout <<"EventLoop::wake" << std::endl;
+	int64_t data = 1;
+	int nWrite = ::write(wakefd_, &data, sizeof(data));
+	if(nWrite != sizeof(data))
+	{
+		std::cout <<"write " << nWrite << std::endl;
+	}
+}
+
+void EventLoop::handleRead() {
+	std::cout <<"EventLoop::handleRead" << std::endl;
+	int64_t data = 1;
+	int nRead = ::read(wakefd_, &data, sizeof(data));
+	if(nRead != sizeof(data))
+	{
+		std::cout <<"Read " << nRead << std::endl;
+	}
+	std::cout <<"EventLoop::handleRead data " << (int)data << std::endl;
+}
+
+void EventLoop::runInLoop(Task task)
+{
+	if(isInEventLoopThread())
+	{
+		task();
+	}
+	else
+	{
+		queueInLoop(task);
+	}
+}
+
+void EventLoop::assertInLoopThread() {
+	if(isInEventLoopThread())
+	{
+		std::cout <<"EventLoop::assertInLoopThread running in event loop thread." << std::endl;
+	}
+	else
+	{
+		std::cout <<"EventLoop::assertInLoopThread running in diffrent thread from event loop thread." << std::endl;
+	}
 }
 
 void EventLoop::queueInLoop(Task task)
 {
-    tasks.push_back(task);
-    wake();
+	std::lock_guard<std::mutex> guard(mutex_);
+	tasks_.push_back(task);
 }
 
-void EventLoop::updateEventHandler(EventHandler* eventHandler)
+bool EventLoop::isInEventLoopThread() {
+	return threadId_ == CurrentThread::tid();
+}
+
+void EventLoop::updateEventHandler(EventHandler* handler)
 {
-    eventDemultiplexer_->update(eventHandler);
+	eventDemultiplexer_->update(handler);
 }
 
-void EventLoop::removeEventHandler(EventHandler* eventHandler)
+void EventLoop::removeEventHandler(EventHandler* handler)
 {
-    eventDemultiplexer_->remove(eventHandler);
+	eventDemultiplexer_->remove(handler);
 }
 
-void EventLoop::handleRead()
+}
+
+int main()
 {
-    std::cout <<"EventLoop::handleRead" << std::endl;
-}
+	assert(Wood::EventLoop::getCurerntEventLoop() == nullptr);
+	Wood::EventLoop loop;
+	assert(Wood::EventLoop::getCurerntEventLoop() == &loop);
+	std::thread ex([&loop](){
+		assert(Wood::EventLoop::getCurerntEventLoop() == nullptr);
+		sleep(2);
+		for(int i= 0; i < 10; i++)
+		{
+			sleep(1);
+			loop.wake();
+		}
+		loop.runInLoop([&loop](){
+			loop.stop();
+		});
+	});
 
-void EventLoop::runPendingTasks()
-{
-    std::cout <<"EventLoop::runPendingTasks TRACE task amount " << tasks.size() << std::endl;
-    for(auto& task : tasks)
-    {
-        task();
-    }
-}
+	loop.loop();
 
-void EventLoop::assertInLoopThread()
-{
-    if(!isInLoopThread())
-    {
-        abortNotInLoopThread();
-    }
-}
-
-
-bool EventLoop::isInLoopThread() const
-{
-    return threadId_ == CurrentThread::tid();
-}
-
-void EventLoop::abortNotInLoopThread()
-{
-    std::cout <<"EventLoop::abortNotInLoopThread FATAL not in thread " << threadId_ << ", current thread " << CurrentThread::tid() << std::endl;
-#ifdef NDEBUG
-    assert(false);
-#endif
-}
+	if(ex.joinable())
+	{
+		ex.join();
+	}
 
 }
-
-void threadFunc(Wood::EventLoop* loop)
-{
-    sleep(2);
-    loop->runInLoop([](){
-        for(int i = 0; i < 1; i++)
-        {
-            std::cout <<"thread Func " << i << std::endl;
-        }
-    });
-}
-
-int main() {
-    Wood::EventLoop aLoop;
-    std::thread aThread(threadFunc, &aLoop);
-    aThread.detach();
-    aLoop.loop();
-
-    std::cout <<"main() Lopp end" << std::endl;
-}
-
-
-    // std::string reason(int errno) {
-    //     if(errno & EINVAL) {
-    //         return "EINVAL An unsupported value was specified in flags.";
-    //     }
-
-    //     if(errno & EMFILE)
-    //     {
-    //         return "EMFILE";
-    //     }
-
-    //     if(errno & ENFILE)
-    //     {
-    //         return "ENFILE"
-    //     }
-
-    //     if(errno & ENODEV)
-    //     {
-    //         return "ENODEV";
-    //     }
-
-    //     if(errno & ENOMEM)
-    //     {
-    //         return "ENOMEM";
-    //     }
-    // }

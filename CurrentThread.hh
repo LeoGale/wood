@@ -1,5 +1,8 @@
 namespace Wood {
 
+#define likely(x) __builtin_expect(!!(x), 1)
+#define unlikely(x) __builtin_expect(!!(x), 0)
+
 namespace CurrentThread {
 	extern __thread int t_tid_;
 	extern __thread char t_tidStr_[32];
@@ -27,8 +30,6 @@ namespace CurrentThread {
 	inline const char* name() {
 		return t_threadName_;
 	}
-
-
 }
 
 }

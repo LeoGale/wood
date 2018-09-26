@@ -1,33 +1,28 @@
-#pragma once
-
-#include <iostream>
-#include <vector>
+#pragma once 
 #include <map>
+#include <vector>
 
 namespace Wood 
 {
-class EventHandler;
 class EventLoop;
+class EventHandler;
 
-using EventHandlers = std::vector<EventHandler*>;
+using EventHandlerList = std::vector<EventHandler*> ;
 
-class EventDemultiplexer {
+class EventDemultiplexer
+{
 public:
 	EventDemultiplexer(EventLoop* loop);
-	virtual ~EventDemultiplexer() = default;
+	virtual ~EventDemultiplexer();
 
 	static EventDemultiplexer* createDefaultPoller(EventLoop* loop);
-	//FIXME Why pointer not reference?
-	virtual void poll(int timeout, EventHandlers *handlers) = 0;
+	virtual void poll(int timeout, EventHandlerList* activeEventHandlers ) = 0;
 	virtual void update(EventHandler* handler) = 0;
-	virtual void remove(EventHandler *handler) = 0;
-	void assertInLoopThread();
+	virtual void remove(EventHandler* handler) = 0;
 protected:
-	using EventHandlerMap = std::map<int, EventHandler*>;
-	EventHandlerMap handlers_;
-
-private: 
+	void assertInLoopThread();
+	std::map<int, EventHandler*> handlers_;
+private:
 	EventLoop* loop_;
 };
-
 }

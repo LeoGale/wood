@@ -1,67 +1,15 @@
+#include <unistd.h>
+#include <poll.h>
+#include <iostream>
+#include <sstream>
+
 #include "EventHandler.hh"
 #include "EventLoop.hh"
 
-#include <iostream>
-#include <sstream>
-#include <unistd.h>
-
 namespace Wood {
-const int EventHandler::NoneEvent = 0;
-const int EventHandler::ReadEvent = POLLIN | POLLPRI;
-const int EventHandler::WriteEvent = POLLOUT;
 
-EventHandler::EventHandler(int fd, EventLoop* loop)
-:fd_(fd),
-events_(NoneEvent),
-revents_(0),
-index_(-1),
-loop_(loop)
-{
-
-}
-
-EventHandler::~EventHandler()
-{
-    
-}
-
-void EventHandler::handleEvent()
-{
-    std::cout <<"EventHandler::handleEvent TRACE" << std::endl;
-    if(revents_ & (POLLIN | POLLPRI))
-    {
-        std::cout <<"EventHandler::handleEvent DEBUG read event emitted." << std::endl;
-        readCallback_();
-    }
-
-    if (revents_ & POLLOUT)
-    {
-        std::cout <<"EventHandler::handleEvent DEBUG write event emitted." << std::endl;
-        writeCallback_();
-    }
-}
-
-std::string EventHandler::eventsStr() const
-{
-    return eventsToString(fd(), events());
-}
-
-std::string EventHandler::reventsStr() const
-{
-    return eventsToString(fd(), revents());
-}
-
-void EventHandler::update() 
-{
-    loop_->updateEventHandler(this);
-}
-
-void EventHandler::remove() 
-{
-    loop_->removeEventHandler(this);
-}
-
-std::string EventHandler::eventsToString(int fd, int ev) const {
+namespace utils {
+	std::string eventsToString(int fd, int ev) {
     std::ostringstream oss;
     oss << fd << ":";
     if (ev & POLLIN)
@@ -115,6 +63,55 @@ std::string EventHandler::eventsToString(int fd, int ev) const {
 #endif
 
     return oss.str().c_str();
+}
+}
+
+const int EventHandler::NoneEvent = 0;
+const int EventHandler::ReadEvent = POLLIN | POLLPRI;
+const int EventHandler::WriteEvent = POLLOUT;
+
+EventHandler::EventHandler(int fd, EventLoop* loop)
+:fd_(fd),
+events_(NoneEvent),
+revents_(NoneEvent),
+index_(-1),
+loop_(loop)
+{
+
+}
+
+void EventHandler::handleEvents()
+{
+	std::cout <<"EventHandler::handleEvents " << std::endl;
+
+	if(revents_ & ReadEvent)
+	{
+		readCallback_();
+	}
+	else if(revents_ & WriteEvent)
+	{
+		writeCallback_();
+	}
+}
+
+void EventHandler::update()
+{
+	loop_->updateEventHandler(this);
+}
+
+void EventHandler::remove()
+{
+	loop_->removeEventHandler(this);
+}
+
+std::string EventHandler::eventsStr() const
+{
+	return utils::eventsToString(fd_, events_);
+}
+
+std::string EventHandler::reventsStr() const
+{
+	return utils::eventsToString(fd_, revents_);
 }
 
 }

@@ -16,7 +16,8 @@ __thread const char* t_threadName_ = "unknown";
 static_assert(std::is_same<int, pid_t>::value, "pid_t is not a int type.");
 }
 
-namespace Detail {
+namespace Detail 
+{
 	pid_t getTid() 
 	{
 		return static_cast<pid_t>(::syscall(SYS_gettid));
@@ -25,7 +26,7 @@ namespace Detail {
 
 void CurrentThread::cacheTid()
 {
-	if(t_tid_ == 0)
+	if(likely(t_tid_ == 0))
 	{
 		t_tid_ = Detail::getTid();
 	}

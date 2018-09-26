@@ -1,101 +1,111 @@
-#include <poll.h>
-#include <string>
+#pragma once 
 #include <functional>
 
 namespace Wood {
+
 class EventLoop;
 
-using ReadCallback = std::function<void()> ;
+using ReadCallback = std::function<void()>;
 using WriteCallback = std::function<void()>;
 
-class EventHandler {
+class EventHandler
+{
 public:
-    EventHandler(int fd, EventLoop* loop);
-    ~EventHandler();
+	EventHandler(int fd, EventLoop* loop);
+	~EventHandler() = default;
 
-    int fd() const
-    {
-        return fd_;
-    }
+	void handleEvents();
 
-    void handleEvent();
+	int fd() const 
+	{
+		return fd_;
+	}
 
-    void enableReading()
-    {
-        events_ |= ReadEvent;
-        update();
-    }
-    void disableReading()
-    {
-        events_ &= ~ReadEvent;
-        update();
-    }
+	void enableReading()
+	{
+		events_ |= ReadEvent;
+		update();
+	}
 
-    void enableWriting()
-    {
-        events_ |= WriteEvent;
-        update();
-    }
-    void disableWriting()
-    {
-        events_ &= ~WriteEvent;
-        update();
-    }
-    void disableAll()
-    {
-        events_ = NoneEvent;
-        update();
-    }
+	void disableReading()
+	{
+		events_ &= ~ReadEvent;
+		update();
+	}
 
-    void setEvents(short events)
-    {
-        events_ = events;
-    }
+	void setReadCallback(ReadCallback cb)
+	{
+		readCallback_ = cb;
+	}
 
-    short events() const
-    {
-        return events_;
-    }
+	void enableWriting() 
+	{
+		events_ |= WriteEvent;
+		update();
+	}
 
-    short revents() const 
-    {
-        return revents_;
-    }
+	void disableWriting() {
+		events_ &= ~WriteEvent;
+	}
 
-    std::string eventsStr() const;
-    std::string reventsStr() const;
+	void setWriteCallback(WriteCallback cb)
+	{
+		writeCallback_ = cb;
+	}
 
-    void setRevents(short revents)
-    {
-        revents_ = revents;
-    }
-    void setReadCallback(WriteCallback callback)
-    {
-        readCallback_ = std::move(callback);
-    }
+	void disableAll()
+	{
+		events_ = NoneEvent;
+		update();
+	}
 
-    void setWriteCallback(ReadCallback callback)
-    {
-        writeCallback_ = std::move(callback);
-    }
 
-    void remove();
+	int events() const {
+		return events_;
+	}
 
-    static const int NoneEvent;
-    static const int ReadEvent;
-    static const int WriteEvent;
+	void setEvents(int events)
+	{
+		events_ = events;
+		update();
+	}
+	
+	std::string eventsStr() const;
 
-  private:
-    std::string eventsToString(int fd, int ev) const;
-    void update();
+	int revents() const {
+		return revents_;
+	}
 
-    int fd_;
-    int events_;
-    int revents_;
-    int index_;
-    EventLoop* loop_;
-    ReadCallback readCallback_;
-    WriteCallback writeCallback_;
+	void setRevents(int revents) {
+		revents_ = revents;
+	}
+
+	std::string reventsStr() const;
+	//used by poller, decrease the query complexity from O(n) to O(1)
+	void setIndex(int index)
+	{
+		index_ = index;
+	}
+
+	int index() const {
+		return index_;
+	}
+
+	void remove();
+
+	static const int ReadEvent;
+	static const int WriteEvent;
+	static const int NoneEvent;
+
+private:
+	void update();
+	int fd_;
+	int events_;
+	int revents_;
+	int index_;
+	EventLoop* loop_;
+	ReadCallback readCallback_;
+	WriteCallback writeCallback_;
 };
 
 }
