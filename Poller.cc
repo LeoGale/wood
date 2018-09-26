@@ -67,8 +67,14 @@ void Poller::update(EventHandler* handler)
 	{
 		int index = handleIter->second->index();
 		assert(index < pfds.size());
-		pfds[index].events = handleIter->second->events();
+		struct pollfd& pfd = pfds[index];
+		pfd.events = handleIter->second->events();
 		std::cout <<"Poller::update update an exist one to " <<utils::pollfd_to_string(pfds[index]) << std::endl;
+
+		if(pfd.events == EventHandler::NoneEvent)
+		{
+			pfd.fd = -handleIter->second->fd() - 1;//-1 when fd is zero
+		}
 	}
 }
 
@@ -76,17 +82,34 @@ void Poller::remove(EventHandler* handler)
 {
 	assertInLoopThread();
 	std::cout <<"Poller::remove " << handler->eventsStr() << std::endl;
-	handlers_.erase(handler->fd());
+	assert(handler);
+	assert(handler->events() == EventHandler::NoneEvent);
+	assert(handlers_.find(handler->fd()) != std::end(handlers_));
+
 	int index = handler->index();
 	assert( index < pfds.size());
-	if(index == pfds.size() -1)
+	const struct pollfd & pfd = pfds[index];
+	assert(pfd.fd < 0);
+	assert(pfd.fd == (-handler->fd() -1));
+	assert(pfd.events == handler->events());
+
+	handlers_.erase(handler->fd());
+
+	if(index == pfds.size() - 1)
 	{
 		pfds.pop_back();
 	}
 	else 
 	{
+		int endFd = pfds.back().fd;
+
 		std::iter_swap(pfds.begin()+index, pfds.end()-1);
-		handlers_[pfds.back().fd]->setIndex(index);
+
+		if(endFd < 0)
+		{
+			endFd = -endFd -1;
+		}
+		handlers_[endFd]->setIndex(index);
 		pfds.pop_back();
 	}
 }
