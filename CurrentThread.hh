@@ -1,35 +1,33 @@
-namespace Wood {
+//
+//  CurrentThread.hpp
+//  
+//
+//  Created by leo on 2019/4/30.
+//
 
-#define likely(x) __builtin_expect(!!(x), 1)
-#define unlikely(x) __builtin_expect(!!(x), 0)
+#ifndef CurrentThread_hh
+#define CurrentThread_hh
 
-namespace CurrentThread {
-	extern __thread int t_tid_;
-	extern __thread char t_tidStr_[32];
-	extern __thread int t_tidStrLen_;
-	extern __thread const char* t_threadName_;
-
-	void cacheTid();
-
-	inline int tid() {
-		if(t_tid_ == 0)
-		{
-			cacheTid();
-		}
-		return t_tid_;
-	}
-
-	inline const char* tidInStr() {
-		return t_tidStr_;
-	}
-
-	inline int tidStrLength() {
-		return t_tidStrLen_;
-	}
-
-	inline const char* name() {
-		return t_threadName_;
-	}
+namespace tornado
+{
+namespace CurrentThread
+{
+    extern __thread int t_tid_;
+    extern __thread const char* t_name_;
+    static_assert(std::is_same<pid_t, int>::value, "pid_t should equal int");
+    void cacheTid();
+    
+    pid_t tid()
+    {
+        if(tid == 0)
+        {
+            cacheTid();
+        }
+        return t_tid_;
+    }
+    
+    const char* name();
+}
 }
 
-}
+#endif /* CurrentThread_hh */
