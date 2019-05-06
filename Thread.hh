@@ -1,6 +1,6 @@
 //
 //  Thread.hh
-//  
+//
 //
 //  Created by leo on 2019/4/24.
 //
@@ -16,17 +16,16 @@ public:
     using ThreadFunc = std::function<void()>;
     Thread(const std::string& name, ThreadFunc && func);
     ~Thread();
-    Thread(Thread && theOther); = delete;
-    Thread& (const Thread&) = delete;
+    Thread(Thread && theOther) = delete;
+    Thread(const Thread&) = delete;
     Thread& operator= (const Thread &) = delete;
     Thread& operator=(Thread&&) = delete;
     void start();
-    void detach();
+    //void detach();
     int join();
-    pid_t tid();
     const std::string& name();
 private:
-    void setDefaultName(int32_t threadNum)
+    void setDefaultName();
     bool started_;
     bool joined_;
     std::string name_;
