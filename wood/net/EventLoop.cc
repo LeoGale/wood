@@ -3,14 +3,13 @@
 #include <assert.h>
 
 #include <iostream>
-#include <thread>
 
 #include "EventLoop.hh"
 #include "EventDemultiplexer.hh"
-#include "CurrentThread.hh"
+#include "wood/base/CurrentThread.hh"
 #include "EventHandler.hh"
 
-namespace Wood {
+namespace wood {
 
 namespace {
 
@@ -157,32 +156,5 @@ void EventLoop::removeEventHandler(EventHandler* handler)
 {
 	eventDemultiplexer_->remove(handler);
 }
-
-}
-
-int main()
-{
-	assert(Wood::EventLoop::getCurerntEventLoop() == nullptr);
-	Wood::EventLoop loop;
-	assert(Wood::EventLoop::getCurerntEventLoop() == &loop);
-	std::thread ex([&loop](){
-		assert(Wood::EventLoop::getCurerntEventLoop() == nullptr);
-		sleep(2);
-		for(int i= 0; i < 10; i++)
-		{
-			sleep(1);
-			loop.wake();
-		}
-		loop.runInLoop([&loop](){
-			loop.stop();
-		});
-	});
-
-	loop.loop();
-
-	if(ex.joinable())
-	{
-		ex.join();
-	}
 
 }

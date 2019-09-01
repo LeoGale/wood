@@ -11,7 +11,7 @@
 
 #include "CurrentThread.hh"
 
-namespace tornado
+namespace wood 
 {
 namespace CurrentThread
 {

@@ -10,7 +10,8 @@
 #include <functional>
 #include <atomic>
 
-namespace tornado {
+namespace wood
+{
 class Thread final {
 public:
     using ThreadFunc = std::function<void()>;

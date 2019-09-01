@@ -6,7 +6,7 @@
 #include <functional>
 #include <mutex>
 
-namespace Wood {
+namespace wood {
 
 class EventDemultiplexer;
 class EventHandler;

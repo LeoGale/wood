@@ -1,0 +1,112 @@
+= DD of wood
+
+:author:  Leon
+:email: leogale@gmail.com
+:revnumber: A
+:revdate:
+:toc: left
+:toclevels: 4
+:source-highlighter: pygments
+:pygments-style: igor
+:pygments-linenums-mode: inline
+:source-language: c++
+
+.*Purpose*
+
+* *Reactor pattern*
+* *Connector and Acepptor*
+
+== Introduction 
+
+=== Basis 
+* Google Proto 3
+* C++11
+* nghttp2.0 
+* Linux system programming 
+* Networking programming 
+
+
+=== Specific Design Considerations 
+
+=== Scope 
+
+=== Document overview 
+
+=== Referneces 
+
+==== Project References 
+* link:https://github.com/chenshuo/muduo[muduo written by chenshuo]
+
+==== Standard and regulartory References
+
+== System Overview 
+
+=== System Characteristics
+
+.*User-friendly Interface*
+
+A very easy understanding and using interfaces. There are also some helpful tools
+to help the guys to do analysis.
+
+.*Availability* 
+
+* *Circuit-breaker* 
+For consecutive failure RPC request, the HTTPClient will close or halfly close the
+service toward to the unhealthy server, then decrease the impact to system.
+
+* *Resilence*
+----
+Availability = MTTF/(MTTF+MTTR) 
+MTTF, namely mean time to failure, it means how long the system can run normally before 
+it gets wrong.
+MTTR, namely mean time to recover, it means how long the system recovery costs.
+----
+
+
+.*Scalability*
+
+N/A
+
+
+=== System Architecture
+
+=== Infrastructure Services 
+
+== System Design 
+
+=== Design Method and Standards 
+=== Naming conventions 
+=== Programming Standards 
+=== Software development tools
+
+== Software Architecture overview 
+
+== Software design description 
+
+=== Componnet 1
+==== Component Interfaces
+> Describe the interfaces of the component and input output data
+
+==== Component design description
+> Describe the design of the componnet, use package diagram and/or class diagram
+to show the links between sub-components/sub-packages and/or classes inside 
+the component  
+
+==== Workflows and algorithms
+> use collaboration diagrams and/or sequence diagram to show the workflows of 
+componnets/packages/classes inside the component.
+
+> Describe algorithms, if possible. An algorithm may be described outside this
+document, in this case, add the reference to that document. 
+
+==== Software requirements mapping 
+> CLASS C software only, list the SRS requirements handled by this components here.
+
+
+== COTS -SOUP identification 
+
+== Critical Requirements 
+> If requirement were tagged as critical in the SRS, add here the traceability
+between these requirements and the components described in this document.
+
+> This information may be added after risk analysis. 

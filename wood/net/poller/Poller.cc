@@ -5,9 +5,9 @@
 #include <sstream>
 
 #include "Poller.hh"
-#include "EventHandler.hh"
+#include "wood/net/EventHandler.hh"
 
-namespace Wood {
+namespace wood {
 
 namespace utils {
 	std::string pollfd_to_string(pollfd & pfd) {

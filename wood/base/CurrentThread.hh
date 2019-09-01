@@ -8,7 +8,7 @@
 #ifndef CurrentThread_hh
 #define CurrentThread_hh
 
-namespace tornado
+namespace wood 
 {
 namespace CurrentThread
 {

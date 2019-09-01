@@ -2,7 +2,7 @@
 #include <map>
 #include <vector>
 
-namespace Wood 
+namespace wood 
 {
 class EventLoop;
 class EventHandler;

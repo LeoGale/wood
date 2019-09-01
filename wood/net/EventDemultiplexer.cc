@@ -2,7 +2,7 @@
 #include "EventLoop.hh"
 
 
-namespace Wood 
+namespace wood 
 {
 	EventDemultiplexer::EventDemultiplexer(EventLoop* loop)
 	:loop_(loop) {

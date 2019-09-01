@@ -1,7 +1,7 @@
 #pragma once 
 #include <functional>
 
-namespace Wood {
+namespace wood {
 
 class EventLoop;
 
@@ -81,7 +81,8 @@ public:
 	}
 
 	std::string reventsStr() const;
-	//used by poller, decrease the query complexity from O(n) to O(1)
+	
+    //used by poller, decrease the query complexity from O(n) to O(1)
 	void setIndex(int index)
 	{
 		index_ = index;
@@ -96,6 +97,8 @@ public:
 	static const int ReadEvent;
 	static const int WriteEvent;
 	static const int NoneEvent;
+    
+    inline bool isNoneEvent() const {return events_ == NoneEvent;}
 
 private:
 	void update();

@@ -1,11 +1,11 @@
 
 #pragma once 
 
-#include "EventDemultiplexer.hh"
+#include "wood/net/EventDemultiplexer.hh"
 
 struct pollfd;
 
-namespace Wood 
+namespace wood 
 {
 class EventLoop;
 
@@ -14,9 +14,9 @@ class Poller : public EventDemultiplexer
 public:
 	Poller(EventLoop* loop);
 	virtual ~Poller() = default;
-	virtual void poll(int timeout, EventHandlerList* activeEventHandlers );
-	virtual void update(EventHandler* handler);
-	virtual void remove(EventHandler* handler);
+	virtual void poll(int timeout, EventHandlerList* activeEventHandlers ) override;
+	virtual void update(EventHandler* handler) override;
+	virtual void remove(EventHandler* handler) override;
 private:
 	void fillActiveHandlers(int numDescriptors, EventHandlerList* activeEventHandlers);
 	using pollfds = std::vector<struct pollfd>;

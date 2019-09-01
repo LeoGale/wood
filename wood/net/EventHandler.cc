@@ -6,7 +6,7 @@
 #include "EventHandler.hh"
 #include "EventLoop.hh"
 
-namespace Wood {
+namespace wood {
 
 namespace utils {
 	std::string eventsToString(int fd, int ev) {

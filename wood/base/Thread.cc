@@ -18,7 +18,7 @@
 #include "Thread.hh"
 #include "CurrentThread.hh"
 
-namespace tornado
+namespace wood 
 {
 
 namespace details
@@ -30,8 +30,8 @@ pid_t gettid()
 
 void afterFork()
 {
-  tornado::CurrentThread::t_tid_ = 0;
-  tornado::CurrentThread::t_name_ = "main";
+  wood::CurrentThread::t_tid_ = 0;
+  wood::CurrentThread::t_name_ = "main";
   CurrentThread::tid();
   std::cout <<"after fork.." << std::endl;
 }
@@ -42,8 +42,8 @@ class ThreadNameInitializer
   ThreadNameInitializer()
   {
     std::cout <<"thread name initializer" << std::endl;
-    tornado::CurrentThread::t_name_ = "main";
-    tornado::CurrentThread::tid();
+    wood::CurrentThread::t_name_ = "main";
+    wood::CurrentThread::tid();
     pthread_atfork(NULL, NULL, &afterFork);
   }
 };
@@ -68,24 +68,24 @@ public:
 
         promise_->set_value();
 
-        tornado::CurrentThread::t_name_ = name_.empty() ? "tornadoThread" : name_.c_str();
+        wood::CurrentThread::t_name_ = name_.empty() ? "woodThread" : name_.c_str();
 
-        ::prctl(PR_SET_NAME, tornado::CurrentThread::t_name_);
+        ::prctl(PR_SET_NAME, wood::CurrentThread::t_name_);
 
         try {
             func_();
-            tornado::CurrentThread::t_name_ = "finished";
+            wood::CurrentThread::t_name_ = "finished";
         }
         catch ( std::exception &e)
         {
-            tornado::CurrentThread::t_name_ = "crashed";
+            wood::CurrentThread::t_name_ = "crashed";
             fprintf(stderr, "exception caught in thread %s\n.", name_.c_str());
             fprintf(stderr, "reason: %s\n", e.what());
             abort();
         }
         catch(...)
         {
-            tornado::CurrentThread::t_name_ = "crashed";
+            wood::CurrentThread::t_name_ = "crashed";
             fprintf(stderr, "unknown exception caught in thread %s\n", name_.c_str());
             throw;
         }
@@ -109,7 +109,7 @@ void CurrentThread::cacheTid()
 {
     if(t_tid_ == 0)
     {
-        t_tid_ = tornado::details::gettid();
+        t_tid_ = wood::details::gettid();
     }
 }
 
