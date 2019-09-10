@@ -1,0 +1,2 @@
+add_executable(testThreadPool testThreadPool.cc)
+target_link_libraries(testThreadPool wood_base)
