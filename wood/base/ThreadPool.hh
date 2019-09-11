@@ -5,29 +5,37 @@
 #include <iostream>
 #include <type_traits>
 #include <functional>
-
+#include <deque>
 
 namespace wood {
 
-template<class F, typename... Args, typename R = std::result_of<F(Args...)>::type>
 class Job {
 public:
-	Job(F && f, Args && ... args)
-	task(std::bind(std::forward<F>(f), std::forward<Args>(args)...))
-	{
-	}
+	//template<class F, typename... Args>
+	//Job(F && f, Args && ... args)
+	//:task_(std::bind(std::forward<F>(f), std::forward<Args>(args)...))
+	//{
+	//}
 	
-	std::future<R> get_future()
+	//using R= typename std::result_of<F(Args...)>::type;
+
+	//std::future<R> get_future()
+	//{
+		//return task_.get_future();
+	//}
+	template<typename T>
+	Job(std::packaged_task<T> && task)
+	:task_(std::forward<std::packaged_task<T>>(task))
 	{
-		return task_.get_future();
 	}
 
-	void operator()
+	void operator()()
 	{
 		task_();
 	}
 private:
-	std::packaged_task<R> task_;
+	std::packaged_task<T> task_;
+       	//Task task_;
 };
 
 class Worker {
@@ -37,12 +45,12 @@ public:
 	:isStopped_(false),
 	id_(id)
 	{
-		thread_ = std::thread(&Worker::run, this)
+		thread_ = std::thread(&Worker::run, this);//FIXME safe ?
 	}
 
 	~Worker()
 	{
-		if(!isStopped)
+		if(!isStopped_)
 		{
 			stop();
 		}
@@ -51,13 +59,13 @@ public:
 	void stop()
 	{
 		isStopped_ = true;
-		if(thread_.joinable)
+		if(thread_.joinable())
  		{
 			thread_.join();
 		}
 	}
 
-	void dispatch(Job && job)
+	void assign(Job && job)
 	{
 		jobs_.push_back(std::forward<Job>(job));
 	}
@@ -93,9 +101,9 @@ public:
 		}
 	}
 
-	void setFetchJobsHandler(FetchJobsFunc && handle)
+	void setFetchJobsHandler(FetchJobsFunc handle)
 	{
-		fetchJobs_ = std::forward<FetchJobsFunc>(handle);
+		fetchJobs_ = std::move(handle);
 	}
 private:
 	bool isStopped_;
@@ -107,7 +115,7 @@ private:
 
 class ThreadPool {
 public:
-	ThreadPool::ThreadPool(std::size_t size)
+	ThreadPool(std::size_t size)
 	{
 		for(std::size_t i = 0; i < size; i++)
 		{
@@ -129,7 +137,7 @@ public:
 		}
 	}
 
-	template<class F, typename Args... args>
+	template<class F, typename ... Args>
 	auto deliver( F f, Args... args)->decltype(std::future<std::result_of<F(Args...)>::type>)
 	{
 		std::lock_guard<std::mutex> lock(mutex_);
@@ -137,23 +145,24 @@ public:
 		return jobs_.back().get_future();
 	}
 
-	template<class F, typename Args... args>
-	auto deliver(uint64_t index, F f, Args... args)->decltype(std::future<std::result_of<F(Args...)>::type>)
+	template<class F, typename ... Args>
+	auto deliver(uint64_t index, F f, Args... args)->decltype(std::future<typename std::result_of<F(Args...)>::type>)
 	{
 		if(workers_.empty())
 		{
 			std::runtime_error("There is no workers running in the pool");
 		}
-		Job job(f, args...);
+		std::packaged_task<typename std::result_of<F(Args...)>::type> task(f);
 		auto result = job.get_future();
-		workers_.at(index%sizeof(wokers_)).dispatch(std::move(job));
+		workers_.at(index%sizeof(wokers_)).assign(task, args...);
+		return result;
 	}
 
 	void fetchJob(std::deque<Job> & jobs, size_t size)
 	{
 		std::lock_guard<std::mutex> lock(mutex_);
 		std::swap_ranges(jobs_.begin(), jobs_.begin()+size, jobs.begin());
-		jobs_.erase(jobs_.begin(), jobs_.begin()+size());
+		jobs_.erase(jobs_.begin(), jobs_.begin()+size);
 		//jobs_.pop_front();
 	}
 
